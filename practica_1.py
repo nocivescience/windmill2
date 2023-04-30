@@ -52,76 +52,25 @@ class Windmill(Scene):
         pivot_dot.add_updater(lambda d: d.move_to(windmill.pivot))
         return pivot_dot
     def next_pivot_and_angle(self,windmill):
-        curr_angle=windmill.get_angle()
-        pivot=windmill.pivot
-        non_pivots=list(
-            filter(lambda p: not np.all(p==pivot),windmill.point_set)
-        )
-        angles=np.array([
-            -(angle_of_vector(point-pivot)-curr_angle)%PI
+        curr_angle = windmill.get_angle()
+        pivot = windmill.pivot
+        non_pivots = np.array(filter(
+            lambda p: not np.all(p == pivot),
+            windmill.point_set
+        ))
+        angles = np.array([
+            -(angle_of_vector(point - pivot) - curr_angle) % PI
             for point in non_pivots
         ])
-        tiny_indices=angles<1e-6 # sacar esto
-        if np.all(tiny_indices):    # sacar esto
-            return non_pivots[0] ,PI # sacar esto
-        angles[tiny_indices]=np.inf # sacar esto
-        index=np.argmin(angles)
-        return non_pivots[index],angles[index]
-    def rotate_to_next_pivot(self, windmill, max_time=None, added_anims=None):
-        new_pivot, angle = self.next_pivot_and_angle(windmill)
-        change_pivot_at_end = True
-        if added_anims is None:
-            added_anims = []
-        run_time = angle / windmill.rot_speed
-        if max_time is not None and run_time > max_time:
-            ratio= max_time/run_time
-            rate_func=(lambda t: ratio*t)
-            run_time = max_time
-            change_pivot_at_end = False
-        else:
-            rate_func=linear
-        for anim in added_anims:
-            if anim.run_time > run_time:
-                anim.run_time = run_time
-        self.play(
-            Rotate(
-                windmill,
-                angle,
-                rate_func=rate_func,
-                run_time=run_time,
-            ),
-            *added_anims,
-        )
-        if change_pivot_at_end:
-            windmill.pivot = new_pivot
-        return [
-            self.get_hit_flash(new_pivot),
-        ], run_time
-    def get_hit_flash(self, point):
-        flash=Flash(
-            point,
-            line_length=.1,
-            flash_radius=.2,
-            run_time=.5,
-            remover=True,
-        )
-        flash_mob=flash.mobject
-        for submob in flash_mob:
-            submob.reverse_points()
-        return Uncreate(
-            flash.mobject,
-            run_time=0.25,
-            lag_ratio=0,
-        )
-    def let_windmill_run(self, windmill, time):
-        anims_from_last_hit = []
-        while time>0:
-            anims_from_last_hit, last_run_time = self.rotate_to_next_pivot(
-                windmill,
-                max_time=time,
-                added_anims=anims_from_last_hit,
-            )
-            time -= last_run_time
+
+        # Edge case for 2 points
+        tiny_indices = angles < 1e-6
+        if np.all(tiny_indices):
+            return non_pivots[0], PI
+
+        angles[tiny_indices] = np.inf
+        index = np.argmin(angles)
+        return non_pivots[index], angles[index]
 class WindmillScene(Windmill):
     def construct(self):
         dots=self.get_dots(self.get_random_point_set())
@@ -129,5 +78,7 @@ class WindmillScene(Windmill):
         dot_pivot=self.get_pivot_dot(line)
         self.play(Create(dots))
         self.play(FadeIn(line),Create(dot_pivot))
-        self.let_windmill_run(line,10)
+        puntos=self.next_pivot_and_angle(line)
+        puntos_dot=MathTex(puntos)
+        self.play(Write(puntos_dot))
         self.wait(3)

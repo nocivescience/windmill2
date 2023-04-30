@@ -1,8 +1,15 @@
 from manim import *
-lista=np.array([1,2,3,4,5,6,7,8,9,10])
-tiny_angle=lista<5
-print(tiny_angle)
-
+def get_random_points(n_points=11,width=6,height=6):
+    return np.array([
+        [
+            -width/2+np.random.random()*width,
+            -height/2+np.random.random()*height,
+            0
+        ]
+        for _ in range(n_points)
+    ])
+numeros=get_random_points()
+print(numeros)
 # lista1=[1,2,3]
 # lista2=list([1,2,3])
 # print(lista2)
